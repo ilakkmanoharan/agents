@@ -210,19 +210,26 @@ class LLM(llm.LLM):
             extra["tools"] = tool_schemas
 
             tool_choice = tool_choice if is_given(tool_choice) else self._opts.tool_choice
-            if is_given(tool_choice):
+            parallel_tool_calls = (
+                parallel_tool_calls
+                if is_given(parallel_tool_calls)
+                else self._opts.parallel_tool_calls
+            )
+
+            if is_given(tool_choice) or is_given(parallel_tool_calls):
                 anthropic_tool_choice: dict[str, Any] | None = {"type": "auto"}
-                if isinstance(tool_choice, dict) and tool_choice.get("type") == "function":
-                    anthropic_tool_choice = {
-                        "type": "tool",
-                        "name": tool_choice["function"]["name"],
-                    }
-                elif isinstance(tool_choice, str):
-                    if tool_choice == "required":
-                        anthropic_tool_choice = {"type": "any"}
-                    elif tool_choice == "none":
-                        extra["tools"] = []
-                        anthropic_tool_choice = None
+                if is_given(tool_choice):
+                    if isinstance(tool_choice, dict) and tool_choice.get("type") == "function":
+                        anthropic_tool_choice = {
+                            "type": "tool",
+                            "name": tool_choice["function"]["name"],
+                        }
+                    elif isinstance(tool_choice, str):
+                        if tool_choice == "required":
+                            anthropic_tool_choice = {"type": "any"}
+                        elif tool_choice == "none":
+                            extra["tools"] = []
+                            anthropic_tool_choice = None
                 if anthropic_tool_choice is not None:
                     forced = anthropic_tool_choice["type"] in ("any", "tool")
                     if forced and self._opts.model.startswith(_NO_FORCED_TOOL_CHOICE_PATTERNS):
@@ -234,11 +241,6 @@ class LLM(llm.LLM):
                             )
                             self._forced_tool_choice_warned = True
                         anthropic_tool_choice = {"type": "auto"}
-                    parallel_tool_calls = (
-                        parallel_tool_calls
-                        if is_given(parallel_tool_calls)
-                        else self._opts.parallel_tool_calls
-                    )
                     if is_given(parallel_tool_calls):
                         anthropic_tool_choice["disable_parallel_tool_use"] = not parallel_tool_calls
                     extra["tool_choice"] = anthropic_tool_choice
