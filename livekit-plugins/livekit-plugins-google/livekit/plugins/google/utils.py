@@ -78,8 +78,7 @@ def create_function_response(
         name=output.name,
         response={"error": output.output} if output.is_error else {"output": output.output},
     )
-    # vertexai does not support scheduling; the gemini api defaults it to WHEN_IDLE
-    if not vertexai and is_given(tool_response_scheduling):
+    if is_given(tool_response_scheduling):
         res.scheduling = tool_response_scheduling
     return res
 

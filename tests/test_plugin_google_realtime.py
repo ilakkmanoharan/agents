@@ -652,18 +652,15 @@ async def test_blocking_tools_send_the_response_and_warn_it_cannot_be_silent(
 
 
 @pytest.mark.parametrize("vertexai", [False, True])
-def test_function_response_scheduling_only_for_gemini_api(vertexai: bool) -> None:
-    """Vertex AI rejects `scheduling`, so it is set only for the Gemini API."""
+def test_function_response_scheduling_for_both_apis(vertexai: bool) -> None:
+    """Both Gemini API and Vertex AI support `scheduling`."""
     res = create_function_response(
         _tool_output(),
         vertexai=vertexai,
         tool_response_scheduling=types.FunctionResponseScheduling.SILENT,
     )
 
-    if vertexai:
-        assert res.scheduling is None
-    else:
-        assert res.scheduling == types.FunctionResponseScheduling.SILENT
+    assert res.scheduling == types.FunctionResponseScheduling.SILENT
 
 
 @pytest.mark.parametrize("vertexai", [False, True])
@@ -732,30 +729,23 @@ async def test_tool_response_omits_a_locally_made_call_id(
         assert replayed[0].function_responses[0].id is None
 
 
-def test_vertex_scheduling_warns(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+@pytest.mark.parametrize("vertexai", [False, True])
+def test_scheduling_does_not_warn(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, vertexai: bool
 ) -> None:
-    """An explicitly set scheduling is dropped on Vertex AI, so say so instead of ignoring it."""
+    """Both Gemini API and Vertex AI support tool_response_scheduling without warning."""
     monkeypatch.setenv("GOOGLE_API_KEY", "fake-key")
 
     with caplog.at_level(logging.WARNING):
-        RealtimeModel(
-            vertexai=True,
-            project="p",
-            location="us-central1",
-            tool_response_scheduling=types.FunctionResponseScheduling.SILENT,
-        )
-
-    assert any("tool_response_scheduling is not supported" in r.message for r in caplog.records)
-
-
-def test_gemini_api_scheduling_does_not_warn(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    monkeypatch.setenv("GOOGLE_API_KEY", "fake-key")
-
-    with caplog.at_level(logging.WARNING):
-        RealtimeModel(tool_response_scheduling=types.FunctionResponseScheduling.SILENT)
+        if vertexai:
+            RealtimeModel(
+                vertexai=True,
+                project="p",
+                location="us-central1",
+                tool_response_scheduling=types.FunctionResponseScheduling.SILENT,
+            )
+        else:
+            RealtimeModel(tool_response_scheduling=types.FunctionResponseScheduling.SILENT)
 
     assert not any("tool_response_scheduling is not supported" in r.message for r in caplog.records)
 
