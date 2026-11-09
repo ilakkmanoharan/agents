@@ -2270,6 +2270,9 @@ liveavatar = [
 lmnt = [
     { name = "livekit-plugins-lmnt" },
 ]
+local-inference = [
+    { name = "livekit-local-inference" },
+]
 mcp = [
     { name = "mcp" },
 ]
@@ -2366,6 +2369,9 @@ speechmatics = [
 spitch = [
     { name = "livekit-plugins-spitch" },
 ]
+standard = [
+    { name = "livekit-local-inference" },
+]
 synthesia = [
     { name = "livekit-plugins-synthesia" },
 ]
@@ -2416,6 +2422,8 @@ requires-dist = [
     { name = "livekit-api", specifier = ">=1.2.2,<2" },
     { name = "livekit-blingfire", specifier = "~=1.1,<2" },
     { name = "livekit-local-inference", specifier = ">=0.2.7" },
+    { name = "livekit-local-inference", marker = "extra == 'local-inference'", specifier = ">=0.2.7" },
+    { name = "livekit-local-inference", marker = "extra == 'standard'", specifier = ">=0.2.7" },
     { name = "livekit-plugins-anam", marker = "extra == 'anam'", editable = "livekit-plugins/livekit-plugins-anam" },
     { name = "livekit-plugins-anthropic", marker = "extra == 'anthropic'", editable = "livekit-plugins/livekit-plugins-anthropic" },
     { name = "livekit-plugins-assemblyai", marker = "extra == 'assemblyai'", editable = "livekit-plugins/livekit-plugins-assemblyai" },
@@ -2519,7 +2527,7 @@ requires-dist = [
     { name = "typing-extensions", specifier = ">=4.12" },
     { name = "watchfiles", specifier = ">=1.0" },
 ]
-provides-extras = ["anam", "anthropic", "assemblyai", "asyncai", "avatario", "avatartalk", "aws", "azure", "baseten", "bey", "bithuman", "bland", "boson-avatar", "browser", "cambai", "cartesia", "cerebras", "clova", "codecs", "deepgram", "did", "elevenlabs", "fal", "fireworksai", "fishaudio", "gladia", "gnani", "google", "gradium", "groq", "hamming", "hume", "images", "inworld", "kalpa", "keyframe", "langchain", "lemonslice", "liveavatar", "lmnt", "mcp", "meta", "microsoft-ai", "minimax", "mistralai", "murf", "nabrah", "neuphonic", "nltk", "nvidia", "openai", "palabra", "perplexity", "phonic", "protoface", "resemble", "reson8", "respeecher", "rime", "rtzr", "runway", "sarvam", "silero", "simli", "simplismart", "slng", "smallestai", "soniox", "spatius", "speechify", "speechmatics", "spitch", "synthesia", "tavus", "thunderphone", "trugen", "turn-detector", "typesafe", "ultravox", "upliftai", "vakyam", "xai", "zoom-ai"]
+provides-extras = ["anam", "anthropic", "assemblyai", "asyncai", "avatario", "avatartalk", "aws", "azure", "baseten", "bey", "bithuman", "bland", "boson-avatar", "browser", "cambai", "cartesia", "cerebras", "clova", "codecs", "deepgram", "did", "elevenlabs", "fal", "fireworksai", "fishaudio", "gladia", "gnani", "google", "gradium", "groq", "hamming", "hume", "images", "inworld", "kalpa", "keyframe", "langchain", "lemonslice", "liveavatar", "lmnt", "local-inference", "mcp", "meta", "microsoft-ai", "minimax", "mistralai", "murf", "nabrah", "neuphonic", "nltk", "nvidia", "openai", "palabra", "perplexity", "phonic", "protoface", "resemble", "reson8", "respeecher", "rime", "rtzr", "runway", "sarvam", "silero", "simli", "simplismart", "slng", "smallestai", "soniox", "spatius", "speechify", "speechmatics", "spitch", "standard", "synthesia", "tavus", "thunderphone", "trugen", "turn-detector", "typesafe", "ultravox", "upliftai", "vakyam", "xai", "zoom-ai"]
 
 [[package]]
 name = "livekit-api"
@@ -2695,14 +2703,14 @@ name = "livekit-example-homepage"
 version = "0"
 source = { virtual = "examples/homepage" }
 dependencies = [
-    { name = "livekit-agents" },
+    { name = "livekit-agents", extra = ["local-inference"] },
     { name = "livekit-plugins-ai-coustics" },
     { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "livekit-agents", editable = "livekit-agents" },
+    { name = "livekit-agents", extras = ["local-inference"], editable = "livekit-agents" },
     { name = "livekit-plugins-ai-coustics", specifier = "~=0.3" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
 ]
@@ -2713,7 +2721,7 @@ version = "0"
 source = { virtual = "examples/hotel_receptionist" }
 dependencies = [
     { name = "apsw" },
-    { name = "livekit-agents" },
+    { name = "livekit-agents", extra = ["local-inference"] },
     { name = "livekit-plugins-silero" },
     { name = "livekit-plugins-turn-detector" },
     { name = "python-dotenv" },
@@ -2723,7 +2731,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "apsw", specifier = ">=3.46" },
-    { name = "livekit-agents", editable = "livekit-agents" },
+    { name = "livekit-agents", extras = ["local-inference"], editable = "livekit-agents" },
     { name = "livekit-plugins-silero", editable = "livekit-plugins/livekit-plugins-silero" },
     { name = "livekit-plugins-turn-detector", editable = "livekit-plugins/livekit-plugins-turn-detector" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
@@ -2778,14 +2786,14 @@ version = "0"
 source = { virtual = "examples/voice_agents" }
 dependencies = [
     { name = "duckduckgo-search" },
-    { name = "livekit-agents", extra = ["deepgram", "elevenlabs", "mcp", "openai", "silero", "turn-detector"] },
+    { name = "livekit-agents", extra = ["deepgram", "elevenlabs", "local-inference", "mcp", "openai", "silero", "turn-detector"] },
     { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "duckduckgo-search", specifier = ">=8.0" },
-    { name = "livekit-agents", extras = ["openai", "elevenlabs", "deepgram", "silero", "turn-detector", "mcp"], editable = "livekit-agents" },
+    { name = "livekit-agents", extras = ["openai", "elevenlabs", "deepgram", "silero", "turn-detector", "mcp", "local-inference"], editable = "livekit-agents" },
     { name = "python-dotenv", specifier = ">=1.0" },
 ]
 

@@ -63,6 +63,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+local-inference = ["livekit-local-inference>=0.2.7"]
+standard = ["livekit-agents[local-inference]"]
 mcp = ["mcp>=2.2, <3"]
 codecs = ["numpy>=1.26.0"]
 images = [

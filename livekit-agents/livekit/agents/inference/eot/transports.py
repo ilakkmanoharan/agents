@@ -13,7 +13,6 @@ import numpy as np
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from livekit import rtc
-from livekit.local_inference import EOT as _EOT
 from livekit.protocol.agent_pb.agent_inference import (
     AUDIO_ENCODING_PCM_S16LE,
     ClientMessage,
@@ -50,6 +49,30 @@ from .base import (
 
 if TYPE_CHECKING:
     from .detector import TurnDetector
+
+# Cached native EOT class, loaded on first use
+_cached_native_eot_cls: type | None = None
+
+
+def _ensure_local_inference_eot() -> type:
+    """Lazy import and cache livekit-local-inference EOT.
+
+    Raises ImportError with install instructions if the package is unavailable.
+    """
+    global _cached_native_eot_cls
+    if _cached_native_eot_cls is not None:
+        return _cached_native_eot_cls
+
+    try:
+        from livekit.local_inference import EOT
+
+        _cached_native_eot_cls = EOT
+        return _cached_native_eot_cls
+    except ImportError as e:
+        raise ImportError(
+            "livekit-local-inference is required for local end-of-turn detection. "
+            "Install it with: pip install livekit-agents[local-inference]"
+        ) from e
 
 
 __all__ = [
@@ -389,7 +412,8 @@ class _LocalTransport:
         self._buf = utils.AudioArrayBuffer(
             buffer_size=_CLIENT_BUFFER_SAMPLES, sample_rate=DEFAULT_SAMPLE_RATE
         )
-        self._eot = _EOT()
+        EOT = _ensure_local_inference_eot()
+        self._eot = EOT()
         self._stream_ref: weakref.ref[_BaseStreamingTurnDetectorStream] | None = None
         self._tasks: set[asyncio.Task[Any]] = set()
 
