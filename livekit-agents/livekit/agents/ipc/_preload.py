@@ -60,7 +60,11 @@ def _local_inference_models() -> bool:
 
     # the VAD and the turn detector's local end-of-turn model: constructing them later in a
     # job is free once these singletons exist (~25 ms of GIL-held CPU otherwise)
-    import livekit.local_inference as li
+    try:
+        import livekit.local_inference as li
+    except ImportError:
+        # livekit-local-inference is optional; skip preload when unavailable
+        return False
 
     li.init_vad()
 

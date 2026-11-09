@@ -3,7 +3,7 @@ name = "livekit-example-homepage"
 version = "0"
 requires-python = ">=3.10"
 dependencies = [
-    "livekit-agents>=1.6",
+    "livekit-agents[local-inference]>=1.6",
     "livekit-plugins-ai-coustics~=0.3",
     "python-dotenv>=1.0.0",
 ]

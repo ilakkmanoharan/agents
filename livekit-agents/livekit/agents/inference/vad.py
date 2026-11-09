@@ -19,22 +19,50 @@ import time
 import weakref
 from concurrent.futures import Executor, ThreadPoolExecutor
 from dataclasses import dataclass, replace
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
 from livekit import rtc
-from livekit.local_inference import VAD as _NativeVAD, VAD_WINDOW_SAMPLES
 
 from .. import utils, vad
 from ..log import logger
 from ..types import NOT_GIVEN, NotGivenOr
 from ..utils import is_given
 
+if TYPE_CHECKING:
+    pass
+
 SLOW_INFERENCE_THRESHOLD = 0.2  # late by 200ms
 _MODEL_SAMPLE_RATE = 16000
 
 VADModels = Literal["silero"]
+
+# Cached values from livekit.local_inference, loaded on first use
+_VAD_WINDOW_SAMPLES: int | None = None
+_cached_native_vad_cls: type | None = None
+
+
+def _ensure_local_inference() -> tuple[type, int]:
+    """Lazy import and cache livekit-local-inference components.
+
+    Raises ImportError with install instructions if the package is unavailable.
+    """
+    global _cached_native_vad_cls, _VAD_WINDOW_SAMPLES
+    if _cached_native_vad_cls is not None and _VAD_WINDOW_SAMPLES is not None:
+        return _cached_native_vad_cls, _VAD_WINDOW_SAMPLES
+
+    try:
+        from livekit.local_inference import VAD as NativeVAD, VAD_WINDOW_SAMPLES
+
+        _cached_native_vad_cls = NativeVAD
+        _VAD_WINDOW_SAMPLES = VAD_WINDOW_SAMPLES
+        return _cached_native_vad_cls, _VAD_WINDOW_SAMPLES
+    except ImportError as e:
+        raise ImportError(
+            "livekit-local-inference is required for local VAD. "
+            "Install it with: pip install livekit-agents[local-inference]"
+        ) from e
 
 
 @dataclass
@@ -151,7 +179,8 @@ class _VADStream(vad.VADStream):
         if executor is None:
             executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="inference.vad")
         self._executor = executor
-        self._native_vad = _NativeVAD()
+        NativeVAD, _ = _ensure_local_inference()
+        self._native_vad = NativeVAD()
 
         self._input_sample_rate = 0
         self._speech_buffer: np.ndarray | None = None
@@ -198,10 +227,17 @@ class _VADStream(vad.VADStream):
                 self._opts.prefix_padding_duration * self._input_sample_rate
             )
 
-            self._speech_buffer.resize(
+            new_size = (
                 int(self._opts.max_buffered_speech * self._input_sample_rate)
                 + self._prefix_padding_samples
             )
+            if new_size != len(self._speech_buffer):
+                # Copy into a new array rather than ndarray.resize(): on Python 3.14 its
+                # reference check rejects this buffer because it is held by an attribute.
+                speech_buffer = np.zeros(new_size, dtype=self._speech_buffer.dtype)
+                kept = min(len(self._speech_buffer), new_size)
+                speech_buffer[:kept] = self._speech_buffer[:kept]
+                self._speech_buffer = speech_buffer
 
             # Resizing may discard samples that the write cursor still counted.
             self._speech_buffer_index = min(self._speech_buffer_index, len(self._speech_buffer))
@@ -266,6 +302,8 @@ class _VADStream(vad.VADStream):
                 )
             else:
                 resampler = None
+
+        _, VAD_WINDOW_SAMPLES = _ensure_local_inference()
 
         async for input_frame in self._input_ch:
             if isinstance(input_frame, self._FlushSentinel):
